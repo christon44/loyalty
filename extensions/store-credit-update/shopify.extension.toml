@@ -1,0 +1,18 @@
+# Learn more about configuring your checkout UI extension:
+# https://shopify.dev/docs/api/checkout-ui-extensions/latest/configuration
+
+api_version = "2026-04"
+
+[[extensions]]
+name = "store-credit-update"
+handle = "store-credit-update"
+type = "ui_extension"
+uid = "6e1a2e48-03c0-9822-e5de-02109fb5c9f3666536d8"
+
+[[extensions.targeting]]
+module = "./src/Checkout.jsx"
+target = "purchase.thank-you.block.render"
+
+[extensions.capabilities]
+api_access = true
+network_access = true

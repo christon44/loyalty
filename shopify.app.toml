@@ -1,0 +1,19 @@
+# Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
+
+client_id = "6b6dc21b7aa56b8cb0b59a60d105b8aa"
+name = "Store-Credit-Reminder"
+application_url = "https://place-fairy-vegetables-doctor.trycloudflare.com"
+embedded = true
+
+[build]
+automatically_update_urls_on_dev = true
+
+[webhooks]
+api_version = "2026-07"
+
+[access_scopes]
+# Learn more at https://shopify.dev/docs/apps/tools/cli/configuration#access_scopes
+scopes = "read_orders,read_customers,read_store_credit_accounts"
+
+[auth]
+redirect_urls = [ "https://place-fairy-vegetables-doctor.trycloudflare.com/auth/callback" ]
