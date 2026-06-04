@@ -344,33 +344,40 @@ function roundMoney(amount) {
 }
 
 function getStoreCreditUsed(transactions) {
-  const savedAmount = transactions
-    ?.filter(isStoreCreditPayment)
-    ?.reduce((total, transaction) => {
-      return total + Number(transaction.amountSet?.shopMoney?.amount || 0);
-    }, 0);
-  const currencyCode = transactions
-    ?.find(isStoreCreditPayment)
-    ?.amountSet?.shopMoney?.currencyCode;
+  if (!transactions?.length) return null;
+
+  const isStoreCreditGateway = (t) => {
+    const gatewayText = [t.gateway, t.formattedGateway].filter(Boolean).join(" ");
+    const normalized = gatewayText.toLowerCase().replace(/[^a-z0-9]/g, "");
+    return normalized.includes("storecredit");
+  };
+
+  const isActive = (t) => ["SUCCESS", "PENDING"].includes(t.status);
+
+  // Prefer SALE/CAPTURE (captured) over AUTHORIZATION (pending capture)
+  // to avoid double-counting when both exist for the same payment
+  const captured = transactions.filter(
+    (t) => isActive(t) && ["SALE", "CAPTURE"].includes(t.kind) && isStoreCreditGateway(t),
+  );
+  const matches = captured.length
+    ? captured
+    : transactions.filter(
+        (t) => isActive(t) && t.kind === "AUTHORIZATION" && isStoreCreditGateway(t),
+      );
+
+  if (!matches.length) return null;
+
+  const currencyCode = matches[0].amountSet?.shopMoney?.currencyCode;
+  const savedAmount = matches.reduce(
+    (total, t) => total + Number(t.amountSet?.shopMoney?.amount || 0),
+    0,
+  );
 
   if (!Number.isFinite(savedAmount) || savedAmount <= 0 || !currencyCode) {
     return null;
   }
 
   return {amount: roundMoney(savedAmount), currencyCode};
-}
-
-function isStoreCreditPayment(transaction) {
-  const gatewayText = [transaction.gateway, transaction.formattedGateway]
-    .filter(Boolean)
-    .join(" ");
-  const normalizedGateway = gatewayText.toLowerCase().replace(/[^a-z0-9]/g, "");
-
-  return (
-    transaction.status === "SUCCESS" &&
-    ["SALE", "CAPTURE"].includes(transaction.kind) &&
-    normalizedGateway.includes("storecredit")
-  );
 }
 
 function getStoreCreditUsedFromTotals(order) {
@@ -384,7 +391,13 @@ function getStoreCreditUsedFromTotals(order) {
     return null;
   }
 
-  const savedAmount = Number(totalPrice.amount) - Number(totalReceived.amount);
+  const priceAmount = Number(totalPrice.amount);
+  const receivedAmount = Number(totalReceived.amount);
+
+  // Only use this fallback when a card payment was actually captured
+  if (!Number.isFinite(receivedAmount) || receivedAmount <= 0) return null;
+
+  const savedAmount = priceAmount - receivedAmount;
 
   if (!Number.isFinite(savedAmount) || savedAmount <= 0) {
     return null;

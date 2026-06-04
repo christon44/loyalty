@@ -147,6 +147,7 @@ function Extension() {
             You saved{" "}
             {shopify.i18n.formatCurrency(Number(savedAmount.amount), {
               currency: savedAmount.currencyCode,
+              currencyDisplay: "narrowSymbol",
             })}{" "}
             on this order.
           </s-text>
@@ -156,6 +157,7 @@ function Extension() {
             You have earned{" "}
             {shopify.i18n.formatCurrency(Number(earnedCredit.amount), {
               currency: earnedCredit.currencyCode,
+              currencyDisplay: "narrowSymbol",
             })}{" "}
             store credits on this order.
           </s-text>
@@ -166,6 +168,7 @@ function Extension() {
               Credit balance you can use for your next purchase:{" "}
               {shopify.i18n.formatCurrency(Number(credit.amount), {
                 currency: credit.currencyCode,
+                currencyDisplay: "narrowSymbol",
               })}
             </s-text>
             <s-text>Hope to see you soon!</s-text>
