@@ -126,8 +126,11 @@ function Extension() {
           <s-text>
             Hi{firstName ? ` ${firstName}` : ""}, you&apos;re already
             spending, why not earn rewards too?{" "}
-            <s-link href={ACCOUNT_LOGIN_URL} target="_blank">
-              SignUp to TMG Industrial to join Membership Program
+            <s-link
+              href={MEMBERSHIP_URL}
+              target="_blank"
+            >
+              Join TMG Membership Program
             </s-link>{" "}
             and start earning store credits today.
           </s-text>
@@ -149,7 +152,7 @@ function Extension() {
               currency: savedAmount.currencyCode,
               currencyDisplay: "narrowSymbol",
             })}{" "}
-            on this order.
+           store credits on this order.
           </s-text>
         ) : null}
         {earnedCredit ? (
