@@ -205,11 +205,19 @@ function parseAppstleLoyalty(value) {
 
   try {
     const loyalty = JSON.parse(value);
+
+    if (!loyalty || typeof loyalty !== "object") {
+      return null;
+    }
+
     const storeCreditBalance = Number(loyalty?.storeCreditBalance);
 
-    return Number.isFinite(storeCreditBalance)
-      ? {...loyalty, storeCreditBalance}
-      : null;
+    return {
+      ...loyalty,
+      storeCreditBalance: Number.isFinite(storeCreditBalance)
+        ? storeCreditBalance
+        : 0,
+    };
   } catch {
     return null;
   }
