@@ -91,23 +91,12 @@ export const action = async ({request}) => {
             firstName
             displayName
             email
-            appstleLoyalty: metafield(
-              namespace: "appstle_loyalty"
-              key: "customer_loyalty"
-            ) {
-              value
-            }
-            appOwnedAppstleLoyalty: metafield(
-              namespace: "app--18394152961--appstle_loyalty"
-              key: "customer_loyalty"
-            ) {
-              value
-            }
-            appOwnedAppstleRewards: metafield(
-              namespace: "app--18394152961--appstle_loyalty"
-              key: "customer_rewards"
-            ) {
-              value
+            metafields(first: 50) {
+              nodes {
+                namespace
+                key
+                value
+              }
             }
             storeCreditAccounts(first: 10) {
               nodes {
@@ -135,11 +124,7 @@ export const action = async ({request}) => {
     }
 
     const customer = result.data?.order?.customer;
-    const appstleLoyalty = parseFirstAppstleLoyalty(
-      customer?.appstleLoyalty?.value,
-      customer?.appOwnedAppstleLoyalty?.value,
-      customer?.appOwnedAppstleRewards?.value,
-    );
+    const appstleLoyalty = findAppstleLoyalty(customer?.metafields?.nodes);
     const savedAmount =
       getStoreCreditUsed(result.data?.order?.transactions) ||
       getStoreCreditUsedFromCardTransactions(
@@ -186,16 +171,18 @@ export const action = async ({request}) => {
   }
 };
 
-function parseFirstAppstleLoyalty(...values) {
-  for (const value of values) {
-    const loyalty = parseAppstleLoyalty(value);
+function findAppstleLoyalty(metafieldNodes) {
+  if (!metafieldNodes?.length) return null;
 
-    if (loyalty) {
-      return loyalty;
-    }
-  }
+  const isAppstle = (node) =>
+    node.namespace === "appstle_loyalty" ||
+    node.namespace.includes("appstle_loyalty");
 
-  return null;
+  const loyaltyNode = metafieldNodes.find(
+    (n) => isAppstle(n) && n.key === "customer_loyalty",
+  );
+
+  return parseAppstleLoyalty(loyaltyNode?.value);
 }
 
 function parseAppstleLoyalty(value) {
