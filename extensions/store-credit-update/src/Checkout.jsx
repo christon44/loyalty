@@ -158,7 +158,7 @@ function Extension() {
         {earnedCredit ? (
           <s-text>
             You have earned{" "}
-            {shopify.i18n.formatCurrency(Number(earnedCredit.amount), {
+            {shopify.i18n.formatCurrency(Number(savedAmount.amount), {
               currency: earnedCredit.currencyCode,
               currencyDisplay: "narrowSymbol",
             })}{" "}
