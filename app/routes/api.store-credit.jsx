@@ -147,7 +147,7 @@ export const action = async ({request}) => {
       result.data?.order,
       savedAmount,
     );
-    const earnedCredit = getCurrentOrderEarnedCredit(result.data?.order);
+    const earnedCredit = getCurrentOrderEarnedCredit(result.data?.order, appstleLoyalty);
 
     return cors(
       Response.json({
@@ -305,21 +305,20 @@ function addPendingOrderCredit(credit, loyalty, currentOrder, savedAmount) {
   };
 }
 
-function getCurrentOrderEarnedCredit(currentOrder) {
-  const orderSubtotal = currentOrder?.subtotalPriceSet?.shopMoney;
-  const subtotalAmount = Number(orderSubtotal?.amount);
+function getCurrentOrderEarnedCredit(currentOrder, loyalty) {
+  if (!loyalty?.customerStatus) return null;
 
-  if (
-    !Number.isFinite(subtotalAmount) ||
-    subtotalAmount <= 0 ||
-    !orderSubtotal?.currencyCode
-  ) {
-    return null;
-  }
+  const storeCreditBalance = Number(loyalty?.storeCreditBalance);
+  if (!Number.isFinite(storeCreditBalance) || storeCreditBalance <= 0) return null;
+
+  const currencyCode =
+    currentOrder?.subtotalPriceSet?.shopMoney?.currencyCode ||
+    currentOrder?.totalPriceSet?.shopMoney?.currencyCode;
+  if (!currencyCode) return null;
 
   return {
-    amount: roundMoney(subtotalAmount / 100),
-    currencyCode: orderSubtotal.currencyCode,
+    amount: roundMoney(storeCreditBalance),
+    currencyCode,
   };
 }
 
