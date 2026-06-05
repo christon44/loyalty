@@ -13,6 +13,6 @@ RUN npm ci --omit=dev && npm cache clean --force
 
 COPY . .
 
-RUN npm run build
+RUN npx prisma generate && npm run build
 
 CMD ["npm", "run", "docker-start"]
