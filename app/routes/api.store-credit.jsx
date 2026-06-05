@@ -211,12 +211,16 @@ function parseAppstleLoyalty(value) {
     }
 
     const storeCreditBalance = Number(loyalty?.storeCreditBalance);
+    const hasBalance = Number.isFinite(storeCreditBalance);
+    const isEnrolled = "customerStatus" in loyalty;
+
+    if (!hasBalance && !isEnrolled) {
+      return null;
+    }
 
     return {
       ...loyalty,
-      storeCreditBalance: Number.isFinite(storeCreditBalance)
-        ? storeCreditBalance
-        : 0,
+      storeCreditBalance: hasBalance ? storeCreditBalance : 0,
     };
   } catch {
     return null;
@@ -433,8 +437,7 @@ function getStoreCreditUsedFromTotals(order) {
   const priceAmount = Number(totalPrice.amount);
   const receivedAmount = Number(totalReceived.amount);
 
-  if (!Number.isFinite(priceAmount) || priceAmount <= 0) return null;
-  if (!Number.isFinite(receivedAmount)) return null;
+  if (!Number.isFinite(receivedAmount) || receivedAmount <= 0) return null;
 
   const savedAmount = priceAmount - receivedAmount;
 
