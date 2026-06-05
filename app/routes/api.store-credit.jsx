@@ -149,6 +149,7 @@ export const action = async ({request}) => {
     );
     const earnedCredit = getCurrentOrderEarnedCredit(
       appstleLoyalty,
+      customer?.storeCreditAccounts?.nodes,
       result.data?.order,
     );
 
@@ -308,8 +309,9 @@ function addPendingOrderCredit(credit, loyalty, currentOrder, savedAmount) {
   };
 }
 
-function getCurrentOrderEarnedCredit(loyalty, currentOrder) {
-  if (!loyalty) {
+function getCurrentOrderEarnedCredit(loyalty, storeCreditAccounts, currentOrder) {
+  const isEnrolled = Boolean(loyalty) || Boolean(storeCreditAccounts?.length);
+  if (!isEnrolled) {
     return null;
   }
 
