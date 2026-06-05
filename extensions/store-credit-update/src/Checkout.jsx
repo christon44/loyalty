@@ -155,10 +155,10 @@ function Extension() {
            store credits on this order.
           </s-text>
         ) : null}
-        {savedAmount? (
+        {earnedCredit? (
           <s-text>
             You have earned{" "}
-            {shopify.i18n.formatCurrency(Number(savedAmount.amount), {
+            {shopify.i18n.formatCurrency(Number(earnedCredit.amount), {
               currency: earnedCredit.currencyCode,
               currencyDisplay: "narrowSymbol",
             })}{" "}
