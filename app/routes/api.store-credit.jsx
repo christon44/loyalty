@@ -306,8 +306,6 @@ function addPendingOrderCredit(credit, loyalty, currentOrder, savedAmount) {
 }
 
 function getCurrentOrderEarnedCredit(currentOrder, loyalty) {
-  if (!loyalty?.customerStatus) return null;
-
   const storeCreditBalance = Number(loyalty?.storeCreditBalance);
   if (!Number.isFinite(storeCreditBalance) || storeCreditBalance <= 0) return null;
 
