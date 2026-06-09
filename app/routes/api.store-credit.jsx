@@ -305,6 +305,13 @@ function addPendingOrderCredit(credit, loyalty, currentOrder, savedAmount) {
   };
 }
 
+function getTierRate(loyalty) {
+  const tier = loyalty?.currentVipTier?.toLowerCase?.() || "";
+  if (tier.includes("vip")) return 0.05;
+  if (tier.includes("gold")) return 0.02;
+  return 0.01;
+}
+
 function getCurrentOrderEarnedCredit(currentOrder, loyalty) {
   if (!loyalty?.customerStatus) return null;
 
@@ -314,7 +321,8 @@ function getCurrentOrderEarnedCredit(currentOrder, loyalty) {
   const subtotalAmount = Number(subtotal.amount);
   if (!Number.isFinite(subtotalAmount) || subtotalAmount <= 0) return null;
 
-  const earnedAmount = roundMoney(subtotalAmount / 100);
+  const rate = getTierRate(loyalty);
+  const earnedAmount = roundMoney(subtotalAmount * rate);
   if (earnedAmount <= 0) return null;
 
   return {
