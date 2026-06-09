@@ -144,8 +144,6 @@ export const action = async ({request}) => {
       appstleLoyalty,
       customer?.storeCreditAccounts?.nodes,
       result.data?.shop?.currencyCode,
-      result.data?.order,
-      savedAmount,
     );
     const earnedCredit = getCurrentOrderEarnedCredit(result.data?.order, appstleLoyalty);
 
@@ -231,13 +229,7 @@ function getCustomerFirstName(customer) {
   return "";
 }
 
-function getLatestCredits(
-  loyalty,
-  storeCreditAccounts,
-  shopCurrencyCode,
-  currentOrder,
-  savedAmount,
-) {
+function getLatestCredits(loyalty, storeCreditAccounts, shopCurrencyCode) {
   const nativeCredits =
     storeCreditAccounts
       ?.map((account) => account.balance)
@@ -254,10 +246,7 @@ function getLatestCredits(
     (credit) => credit.currencyCode !== appstleCredit.currencyCode,
   );
 
-  return [
-    ...otherNativeCredits,
-    addPendingOrderCredit(appstleCredit, loyalty, currentOrder, savedAmount),
-  ];
+  return [...otherNativeCredits, appstleCredit];
 }
 
 function getAppstleCredits(loyalty, currencyCode) {
@@ -268,32 +257,6 @@ function getAppstleCredits(loyalty, currencyCode) {
   }
 
   return [{amount, currencyCode}];
-}
-
-function addPendingOrderCredit(credit, loyalty, currentOrder, savedAmount) {
-  if (!isCurrentOrderPendingInAppstle(loyalty, currentOrder)) {
-    return credit;
-  }
-
-  const orderSubtotal = currentOrder?.subtotalPriceSet?.shopMoney;
-
-  if (orderSubtotal?.currencyCode !== credit.currencyCode) {
-    return credit;
-  }
-
-  const earnedAmount = Math.round(Number(orderSubtotal.amount)) / 100;
-
-  if (!Number.isFinite(earnedAmount) || earnedAmount <= 0) {
-    return credit;
-  }
-
-  return {
-    ...credit,
-    amount: roundMoney(
-      Math.max(Number(credit.amount) - Number(savedAmount?.amount || 0), 0) +
-        earnedAmount,
-    ),
-  };
 }
 
 function getTierRate(loyalty) {
@@ -320,17 +283,6 @@ function getCurrentOrderEarnedCredit(currentOrder, loyalty) {
     amount: earnedAmount,
     currencyCode: subtotal.currencyCode,
   };
-}
-
-function isCurrentOrderPendingInAppstle(loyalty, currentOrder) {
-  const loyaltyActivityDate = Date.parse(loyalty?.lastActivityDate);
-  const orderCreatedAt = Date.parse(currentOrder?.createdAt);
-
-  return (
-    Number.isFinite(loyaltyActivityDate) &&
-    Number.isFinite(orderCreatedAt) &&
-    loyaltyActivityDate < orderCreatedAt
-  );
 }
 
 function roundMoney(amount) {
