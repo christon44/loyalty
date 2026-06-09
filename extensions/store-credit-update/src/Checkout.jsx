@@ -155,7 +155,7 @@ function Extension() {
               currency: savedAmount.currencyCode,
               currencyDisplay: "narrowSymbol",
             })}{" "}
-           store credits on this order.
+           using your store credits on this order.
           </s-text>
         ) : null}
         {earnedCredit? (
