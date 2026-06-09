@@ -164,7 +164,10 @@ async function fetchAppstleLoyalty(shop, customerGid) {
   const apiKey = process.env.APPSTLE_API_KEY;
   const customerId = customerGid?.replace("gid://shopify/Customer/", "");
 
+  console.log("[Appstle] shop:", shop, "customerId:", customerId, "hasApiKey:", Boolean(apiKey));
+
   if (!apiKey || !shop || !customerId) {
+    console.log("[Appstle] missing required param, skipping");
     return null;
   }
 
@@ -179,12 +182,16 @@ async function fetchAppstleLoyalty(shop, customerGid) {
       headers: {"X-API-Key": apiKey},
     });
 
+    console.log("[Appstle] response status:", response.status);
+
     if (!response.ok) {
-      console.error("Appstle loyalty lookup failed", response.status);
+      const body = await response.text();
+      console.error("[Appstle] lookup failed", response.status, body);
       return null;
     }
 
     const loyalty = await response.json();
+    console.log("[Appstle] loyalty data:", JSON.stringify(loyalty));
 
     if (!loyalty || typeof loyalty !== "object") {
       return null;
@@ -199,7 +206,7 @@ async function fetchAppstleLoyalty(shop, customerGid) {
         : 0,
     };
   } catch (error) {
-    console.error("Appstle loyalty lookup failed", error);
+    console.error("[Appstle] lookup failed", error);
     return null;
   }
 }
