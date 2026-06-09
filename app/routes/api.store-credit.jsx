@@ -250,23 +250,14 @@ function getLatestCredits(
   }
 
   const appstleCredit = appstleCredits[0];
-  const shopCurrencyCredit = nativeCredits.find(
-    (credit) => credit.currencyCode === appstleCredit.currencyCode,
+  const otherNativeCredits = nativeCredits.filter(
+    (credit) => credit.currencyCode !== appstleCredit.currencyCode,
   );
 
-  if (!shopCurrencyCredit) {
-    return [
-      ...nativeCredits,
-      addPendingOrderCredit(appstleCredit, loyalty, currentOrder, savedAmount),
-    ];
-  }
-
-  return nativeCredits.map((credit) =>
-    credit === shopCurrencyCredit &&
-    Number(appstleCredit.amount) === Number(shopCurrencyCredit.amount)
-      ? addPendingOrderCredit(credit, loyalty, currentOrder, savedAmount)
-      : credit,
-  );
+  return [
+    ...otherNativeCredits,
+    addPendingOrderCredit(appstleCredit, loyalty, currentOrder, savedAmount),
+  ];
 }
 
 function getAppstleCredits(loyalty, currencyCode) {
