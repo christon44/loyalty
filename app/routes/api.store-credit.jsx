@@ -56,7 +56,6 @@ export const action = async ({request}) => {
           currencyCode
         }
         order(id: $orderId) {
-          createdAt
           subtotalPriceSet {
             shopMoney {
               amount
@@ -88,21 +87,10 @@ export const action = async ({request}) => {
             }
           }
           customer {
+            id
             firstName
             displayName
             email
-            appstleLoyalty: metafield(
-              namespace: "appstle_loyalty"
-              key: "customer_loyalty"
-            ) {
-              value
-            }
-            appOwnedAppstleLoyalty: metafield(
-              namespace: "app--18394152961--appstle_loyalty"
-              key: "customer_loyalty"
-            ) {
-              value
-            }
             storeCreditAccounts(first: 10) {
               nodes {
                 balance {
@@ -129,10 +117,7 @@ export const action = async ({request}) => {
     }
 
     const customer = result.data?.order?.customer;
-    const appstleLoyalty = parseFirstAppstleLoyalty(
-      customer?.appstleLoyalty?.value,
-      customer?.appOwnedAppstleLoyalty?.value,
-    );
+    const appstleLoyalty = await fetchAppstleLoyalty(shop, customer?.id);
     const savedAmount =
       getStoreCreditUsed(result.data?.order?.transactions) ||
       getStoreCreditUsedFromCardTransactions(
@@ -144,8 +129,6 @@ export const action = async ({request}) => {
       appstleLoyalty,
       customer?.storeCreditAccounts?.nodes,
       result.data?.shop?.currencyCode,
-      result.data?.order,
-      savedAmount,
     );
     const earnedCredit = getCurrentOrderEarnedCredit(result.data?.order, appstleLoyalty);
 
@@ -157,6 +140,7 @@ export const action = async ({request}) => {
         firstName: getCustomerFirstName(customer),
         isCustomerInSystem: Boolean(customer),
         isMembershipCustomer: Boolean(appstleLoyalty),
+        vipTier: appstleLoyalty?.currentVipTier || null,
       }),
     );
   } catch (error) {
@@ -176,39 +160,46 @@ export const action = async ({request}) => {
   }
 };
 
-function parseFirstAppstleLoyalty(...values) {
-  for (const value of values) {
-    const loyalty = parseAppstleLoyalty(value);
-    if (loyalty) return loyalty;
-  }
-  return null;
-}
+async function fetchAppstleLoyalty(shop, customerGid) {
+  const apiKey = process.env.APPSTLE_API_KEY;
+  const customerId = customerGid?.replace("gid://shopify/Customer/", "");
 
-function parseAppstleLoyalty(value) {
-  if (!value) {
+  if (!apiKey || !shop || !customerId) {
     return null;
   }
 
   try {
-    const loyalty = JSON.parse(value);
+    const url = new URL(
+      "https://loyalty-admin.appstle.com/api/external/customer-loyalty",
+    );
+    url.searchParams.set("shop", shop);
+    url.searchParams.set("customer_id", customerId);
+
+    const response = await fetch(url, {
+      headers: {"X-API-Key": apiKey},
+    });
+
+    if (!response.ok) {
+      console.error("Appstle loyalty lookup failed", response.status);
+      return null;
+    }
+
+    const loyalty = await response.json();
 
     if (!loyalty || typeof loyalty !== "object") {
       return null;
     }
 
     const storeCreditBalance = Number(loyalty?.storeCreditBalance);
-    const hasBalance = Number.isFinite(storeCreditBalance);
-    const isEnrolled = "customerStatus" in loyalty;
-
-    if (!hasBalance && !isEnrolled) {
-      return null;
-    }
 
     return {
       ...loyalty,
-      storeCreditBalance: hasBalance ? storeCreditBalance : 0,
+      storeCreditBalance: Number.isFinite(storeCreditBalance)
+        ? storeCreditBalance
+        : 0,
     };
-  } catch {
+  } catch (error) {
+    console.error("Appstle loyalty lookup failed", error);
     return null;
   }
 }
@@ -231,78 +222,18 @@ function getCustomerFirstName(customer) {
   return "";
 }
 
-function getLatestCredits(
-  loyalty,
-  storeCreditAccounts,
-  shopCurrencyCode,
-  currentOrder,
-  savedAmount,
-) {
-  const nativeCredits =
+function getLatestCredits(loyalty, storeCreditAccounts, shopCurrencyCode) {
+  const appstleBalance = Number(loyalty?.storeCreditBalance);
+
+  if (Number.isFinite(appstleBalance) && appstleBalance > 0 && shopCurrencyCode) {
+    return [{amount: roundMoney(appstleBalance), currencyCode: shopCurrencyCode}];
+  }
+
+  return (
     storeCreditAccounts
       ?.map((account) => account.balance)
-      ?.filter((balance) => Number(balance.amount) > 0) || [];
-
-  const appstleCredits = getAppstleCredits(loyalty, shopCurrencyCode);
-
-  if (!appstleCredits.length) {
-    return nativeCredits;
-  }
-
-  const appstleCredit = appstleCredits[0];
-  const shopCurrencyCredit = nativeCredits.find(
-    (credit) => credit.currencyCode === appstleCredit.currencyCode,
+      ?.filter((balance) => Number(balance.amount) > 0) || []
   );
-
-  if (!shopCurrencyCredit) {
-    return [
-      ...nativeCredits,
-      addPendingOrderCredit(appstleCredit, loyalty, currentOrder, savedAmount),
-    ];
-  }
-
-  return nativeCredits.map((credit) =>
-    credit === shopCurrencyCredit &&
-    Number(appstleCredit.amount) === Number(shopCurrencyCredit.amount)
-      ? addPendingOrderCredit(credit, loyalty, currentOrder, savedAmount)
-      : credit,
-  );
-}
-
-function getAppstleCredits(loyalty, currencyCode) {
-  const amount = Number(loyalty?.storeCreditBalance);
-
-  if (!Number.isFinite(amount) || amount <= 0 || !currencyCode) {
-    return [];
-  }
-
-  return [{amount, currencyCode}];
-}
-
-function addPendingOrderCredit(credit, loyalty, currentOrder, savedAmount) {
-  if (!isCurrentOrderPendingInAppstle(loyalty, currentOrder)) {
-    return credit;
-  }
-
-  const orderSubtotal = currentOrder?.subtotalPriceSet?.shopMoney;
-
-  if (orderSubtotal?.currencyCode !== credit.currencyCode) {
-    return credit;
-  }
-
-  const earnedAmount = Math.round(Number(orderSubtotal.amount)) / 100;
-
-  if (!Number.isFinite(earnedAmount) || earnedAmount <= 0) {
-    return credit;
-  }
-
-  return {
-    ...credit,
-    amount: roundMoney(
-      Math.max(Number(credit.amount) - Number(savedAmount?.amount || 0), 0) +
-        earnedAmount,
-    ),
-  };
 }
 
 function getCurrentOrderEarnedCredit(currentOrder, loyalty) {
@@ -320,17 +251,6 @@ function getCurrentOrderEarnedCredit(currentOrder, loyalty) {
     amount: roundMoney(storeCreditBalance),
     currencyCode,
   };
-}
-
-function isCurrentOrderPendingInAppstle(loyalty, currentOrder) {
-  const loyaltyActivityDate = Date.parse(loyalty?.lastActivityDate);
-  const orderCreatedAt = Date.parse(currentOrder?.createdAt);
-
-  return (
-    Number.isFinite(loyaltyActivityDate) &&
-    Number.isFinite(orderCreatedAt) &&
-    loyaltyActivityDate < orderCreatedAt
-  );
 }
 
 function roundMoney(amount) {
