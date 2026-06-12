@@ -1,6 +1,6 @@
 # Learn more about configuring your app at https://shopify.dev/docs/apps/tools/cli/configuration
 
-client_id = "3fb4cda3fd064bee0f489afdc6fdd6f7"
+client_id = "4fd088e526aab1bb7d947a9217c08866"
 name = "Store-Credit-Reminder"
 application_url = "https://credit.apps.tmgindustrial.com"
 embedded = true
