@@ -24,6 +24,11 @@ function Extension() {
   useEffect(() => {
     async function loadStoreCredit() {
       try {
+        if (shopify.buyerIdentity?.purchasingCompany?.value) {
+          setStatus("hidden");
+          return;
+        }
+
         const orderId = shopify.orderConfirmation.value?.order?.id;
 
         if (!orderId) {
@@ -75,6 +80,10 @@ function Extension() {
 
     loadStoreCredit();
   }, []);
+
+  if (status === "hidden") {
+    return null;
+  }
 
   if (status === "loading") {
     return (
