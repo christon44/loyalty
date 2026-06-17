@@ -5,7 +5,7 @@ import {useEffect, useState} from "preact/hooks";
 const APP_URL = "https://credit.apps.tmgindustrial.com";
 const ACCOUNT_LOGIN_URL =
   "https://shopify.com/authentication/80657907968/login?client_id=701f89ba-7af7-4192-a741-47abf7a424c9&locale=en&redirect_uri=%2Fauthentication%2F80657907968%2Foauth%2Fauthorize%3F_cs%3D%26buyer_flags%3DeyJhbGciOiJIUzI1NiJ9.eyJpc3MiOiIxMjM0LTEyMzQ1Njc4OTAxMjM0NTY4MDM5Lm15c2hvcGlmeS5jb20iLCJmbGFncyI6W10sImV4cCI6MTc4MTEyMTE1NiwibmJmIjoxNzgwNTE2MzU2fQ.tBVB9V0riZQ5Qs-VfwUEk-CLTA6Vph9cdtPgS9N3vZQ%26client_id%3D701f89ba-7af7-4192-a741-47abf7a424c9%26locale%3Den%26nonce%3D6376b649-fdc6-41c1-911f-e068092321a7%26redirect_uri%3Dhttps%253A%252F%252F1234-12345678901234568039.myshopify.com%252Fcustomer_authentication%252Fcallback%26response_type%3Dcode%26scope%3Dopenid%2Bemail%2Bcustomer-account-api%253Afull%26state%3DhWNCvKrRo9zDRgp4H6i3xnI9&ui_hint=full";
-const MEMBERSHIP_URL = "https://tmg-ca-test.myshopify.com/apps/loyalty";
+const MEMBERSHIP_URL = "https://tmgindustrial.ca/apps/loyalty";
 
 export default async () => {
   render(<Extension />, document.body);
